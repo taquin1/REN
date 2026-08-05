@@ -1,409 +1,51 @@
-```html
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>לב חם ❤️ | אתר היכרויות חינמי</title>
-
-<meta name="description" content="לב חם - אתר היכרויות חינמי למציאת אהבה וקשרים חדשים">
-
-<style>
-
-*{
-    box-sizing:border-box;
-    margin:0;
-    padding:0;
-    font-family:Arial,"Heebo",sans-serif;
-}
-
-body{
-    background:#fff7ed;
-    color:#333;
-}
-
-header{
-    background:linear-gradient(135deg,#f43f5e,#fb923c);
-    color:white;
-    padding:40px 20px;
-    text-align:center;
-}
-
-header h1{
-    font-size:48px;
-}
-
-header p{
-    font-size:20px;
-    margin-top:10px;
-}
-
-
-.container{
-    width:90%;
-    max-width:1100px;
-    margin:auto;
-    padding:30px 0;
-}
-
-
-.hero{
-    background:white;
-    border-radius:20px;
-    padding:35px;
-    text-align:center;
-    box-shadow:0 10px 30px #0002;
-}
-
-
-button{
-    background:#f43f5e;
-    border:none;
-    color:white;
-    padding:14px 30px;
-    border-radius:30px;
-    cursor:pointer;
-    font-size:18px;
-    margin-top:15px;
-}
-
-button:hover{
-    background:#dc2645;
-}
-
-
-.search{
-    margin:30px 0;
-}
-
-input{
-    width:100%;
-    padding:15px;
-    border-radius:15px;
-    border:1px solid #ddd;
-    font-size:16px;
-}
-
-
-.profiles{
-    display:grid;
-    grid-template-columns:
-    repeat(auto-fit,minmax(250px,1fr));
-    gap:25px;
-}
-
-
-.card{
-    background:white;
-    border-radius:20px;
-    overflow:hidden;
-    box-shadow:0 8px 25px #0002;
-}
-
-
-.card img{
-    width:100%;
-    height:260px;
-    object-fit:cover;
-}
-
-
-.info{
-    padding:20px;
-}
-
-
-.tag{
-    display:inline-block;
-    background:#ffe4e6;
-    color:#be123c;
-    padding:6px 12px;
-    border-radius:20px;
-    margin-top:10px;
-}
-
-
-.register{
-    margin-top:40px;
-    background:white;
-    padding:30px;
-    border-radius:20px;
-}
-
-
-input,textarea,select{
-    margin:10px 0;
-}
-
-
-textarea{
-    width:100%;
-    padding:15px;
-    border-radius:15px;
-    border:1px solid #ddd;
-}
-
-
-footer{
-    background:#222;
-    color:white;
-    text-align:center;
-    padding:25px;
-    margin-top:40px;
-}
-
-
-</style>
-
-</head>
-
-
-<body>
-
-
-<header>
-
-<h1>❤️ לב חם</h1>
-
-<p>
-אתר היכרויות חינמי למציאת קשר אמיתי
-</p>
-
-</header>
-
-
-
-<div class="container">
-
-
-<section class="hero">
-
-<h2>
-מצא/י את האדם המתאים לך
-</h2>
-
-<p>
-הכירו אנשים חדשים, צרו קשרים והתחילו סיפור חדש.
-</p>
-
-<button onclick="scrollRegister()">
-הצטרפות חינם
-</button>
-
-</section>
-
-
-
-<div class="search">
-
-<h2>
-חיפוש משתמשים
-</h2>
-
-<input id="search"
-placeholder="חיפוש לפי שם..."
-onkeyup="filterProfiles()">
-
-</div>
-
-
-
-
-<h2>
-פרופילים מומלצים ❤️
-</h2>
-
-
-<div class="profiles" id="profiles">
-
-
-
-<div class="card">
-
-<img src="https://randomuser.me/api/portraits/women/44.jpg">
-
-<div class="info">
-
-<h3>נועה, 26</h3>
-
-<p>
-אוהבת טיולים, מוזיקה וקפה.
-</p>
-
-<span class="tag">
-קשר רציני
-</span>
-
-</div>
-
-</div>
-
-
-
-<div class="card">
-
-<img src="https://randomuser.me/api/portraits/men/32.jpg">
-
-<div class="info">
-
-<h3>דניאל, 30</h3>
-
-<p>
-אוהב ספורט ובישול.
-</p>
-
-<span class="tag">
-פנוי להיכרות
-</span>
-
-</div>
-
-</div>
-
-
-
-<div class="card">
-
-<img src="https://randomuser.me/api/portraits/women/68.jpg">
-
-<div class="info">
-
-<h3>מיכל, 28</h3>
-
-<p>
-מחפשת אדם מיוחד לחיים.
-</p>
-
-<span class="tag">
-אהבה חדשה
-</span>
-
-</div>
-
-</div>
-
-
-
-</div>
-
-
-
-
-<section class="register" id="register">
-
-
-<h2>
-הרשמה בחינם
-</h2>
-
-
-<input placeholder="שם">
-
-<input placeholder="גיל">
-
-
-<select>
-
-<option>
-בחר אזור
-</option>
-
-<option>
-מרכז
-</option>
-
-<option>
-צפון
-</option>
-
-<option>
-דרום
-</option>
-
-</select>
-
-
-<textarea placeholder="ספר/י על עצמך"></textarea>
-
-
-<button onclick="register()">
-צור פרופיל
-</button>
-
-
-</section>
-
-
-
-</div>
-
-
-
-
-<footer>
-
-❤️ לב חם © 2026
-
-</footer>
-
-
-
-<script>
-
-
-function register(){
-
-alert("ברוכים הבאים ללב חם ❤️");
-
-}
-
-
-
-function scrollRegister(){
-
-document
-.getElementById("register")
-.scrollIntoView({
-behavior:"smooth"
-});
-
-}
-
-
-
-function filterProfiles(){
-
-let value =
-document
-.getElementById("search")
-.value
-.toLowerCase();
-
-
-document
-.querySelectorAll(".card")
-.forEach(card=>{
-
-let text =
-card.innerText.toLowerCase();
-
-
-card.style.display =
-text.includes(value)
-?"block"
-:"none";
-
-
-});
-
-
-}
-
-
-</script>
-
-
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f43f5e" />
+    <meta name="description" content="לב חם - אתר היכרויות חינמי לחלוטין. מצא את האהבה הבאה שלך היום." />
+    <title>לב חם | היכרויות חינמיות</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; height: 100%; font-family: 'Heebo', system-ui, sans-serif; }
+      body { background-color: #fff7ed; }
+      #root { min-height: 100%; }
+      .loader {
+        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #f43f5e, #fb923c); color: white; z-index: 9999;
+      }
+      .loader-content { text-align: center; }
+      .loader-heart {
+        width: 80px; height: 80px; margin: 0 auto 20px;
+        background: rgba(255,255,255,0.2); border-radius: 24px;
+        display: flex; align-items: center; justify-content: center;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+      .loader-heart svg { width: 40px; height: 40px; fill: white; }
+      .loader-text { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+      .loader-sub { font-size: 14px; opacity: 0.8; margin-top: 8px; }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="loader">
+        <div class="loader-content">
+          <div class="loader-heart">
+            <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          </div>
+          <div class="loader-text">לב חם</div>
+          <div class="loader-sub">טוען את האהבה...</div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>
-```
