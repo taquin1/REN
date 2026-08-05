@@ -1,481 +1,543 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Heart, X, MessageCircle, User as UserIcon, LogOut, MapPin,
-  Sparkles, RotateCcw, Video, VideoOff, Mic, MicOff, PhoneOff,
-  Bell, ShieldCheck, Navigation,
-} from "lucide-react";
+import { Heart, X, Star, MessageCircle, MapPin, Sparkles, Bell, Video, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AuthScreen } from "@/components/AuthScreen";
-import { ProfileCard } from "@/components/ProfileCard";
-import { sampleProfiles } from "@/data/profiles";
-import { Profile, User, View } from "@/types";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
+
+type Profile = {
+  id: number;
+  name: string;
+  age: number;
+  city: string;
+  distance: number;
+  bio: string;
+  interests: string[];
+  image: string;
+  gradient: string;
+};
+
+const profiles: Profile[] = [
+  { id: 1, name: "נועה", age: 26, city: "תל אביב", distance: 2, bio: "מעצבת גרפית, אוהבת קפה בבוקר ושקיעות בים. מחפשת מישהו לטיולים ארוכים ושיחות עמוקות.", interests: ["צילום", "יוגה", "בישול", "מסעדנות"], image: "", gradient: "from-rose-400 via-pink-500 to-fuchsia-500" },
+  { id: 2, name: "איתי", age: 29, city: "חיפה", distance: 5, bio: "מהנדס תוכנה, גיטריסט וחובב טבע. נהנה מטיולים בצפון ומבירות ערב.", interests: ["מוזיקה", "טיולים", "קולנוע", "קריאה"], image: "", gradient: "from-amber-400 via-orange-500 to-red-500" },
+  { id: 3, name: "שירה", age: 24, city: "ירושלים", distance: 8, bio: "סטודנטית לפסיכולוגיה, אוהבת ספרים וכלבים. מחפשת קשר רציני עם בן אדם חם ואמיתי.", interests: ["קריאה", "כלבים", "פסיכולוגיה", "אמנות"], image: "", gradient: "from-violet-400 via-purple-500 to-indigo-500" },
+  { id: 4, name: "דניאל", age: 31, city: "תל אביב", distance: 1, bio: "יזם בנשמה, אוהב כושר ואוכל טוב. מחפש מישהי שתצא איתי להרפתקאות.", interests: ["כושר", "סטארטאפים", "אוכל", "נסיעות"], image: "", gradient: "from-emerald-400 via-teal-500 to-cyan-500" },
+  { id: 5, name: "מאיה", age: 27, city: "ראשון לציון", distance: 4, bio: "וטרינרית שאוהבת חיות וטבע. בזמני הפנוי אני מתנדבת במקלט חתולים.", interests: ["חיות", "טבע", "התנדבות", "סרטים"], image: "", gradient: "from-sky-400 via-blue-500 to-indigo-500" },
+  { id: 6, name: "עומר", age: 28, city: "נתניה", distance: 6, bio: "שף במקצוע, גולש בנשמה. אוהב לבשל ארוחות ערב רומנטיות ולצאת לים.", interests: ["בישול", "גלישה", "ים", "יין"], image: "", gradient: "from-orange-400 via-amber-500 to-yellow-500" },
+];
+
+type Screen = "login" | "discover" | "matches" | "chat";
+type Match = { profile: Profile; messages: { from: "me" | "them"; text: string }[] };
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [view, setView] = useState<View>("discover");
-  const [profiles, setProfiles] = useState<Profile[]>(sampleProfiles);
-  const [matches, setMatches] = useState<Profile[]>([]);
-  const [matchPopup, setMatchPopup] = useState<Profile | null>(null);
-  const [notifications, setNotifications] = useState<{ id: string; text: string; icon: string }[]>([]);
+  const [screen, setScreen] = useState<Screen>("login");
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [activeChat, setActiveChat] = useState<number | null>(null);
+  const [notifCount, setNotifCount] = useState(2);
   const [showNotifs, setShowNotifs] = useState(false);
-  const [videoCall, setVideoCall] = useState<Profile | null>(null);
-  const [callState, setCallState] = useState<"ringing" | "connected" | "ended">("ringing");
-  const [muted, setMuted] = useState(false);
-  const [videoOff, setVideoOff] = useState(false);
+  const [notifications, setNotifications] = useState<string[]>([
+    "ברוכים הבאים ל-LoveMatch! התחל/י להחליק ולמצוא התאמות 🔥",
+    "יש לך 3 פרופילים חדשים באזורך שמחכים לך",
+  ]);
 
-  // Simulate real-time notifications
-  useEffect(() => {
-    if (!user) return;
-    const interval = setInterval(() => {
-      const msgs = [
-        { text: "מאיה שלחה לך הודעה חדשה!", icon: "message" },
-        { text: "יש לך התאמה חדשה עם רון!", icon: "heart" },
-        { text: "שירה צפתה בפרופיל שלך", icon: "eye" },
-      ];
-      const msg = msgs[Math.floor(Math.random() * msgs.length)];
-      setNotifications((prev) => [{ id: Date.now().toString(), ...msg }, ...prev].slice(0, 10));
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [user]);
+  const current = profiles[currentIdx];
 
-  const handleAuth = (method: "google" | "facebook" | "sms" | "email", identifier: string) => {
-    setUser({
-      name: "דנה כהן",
-      age: 26,
-      city: "תל אביב",
-      bio: "אוהבת חיים, קפה והרפתקאות. מחפשת מישהו כנה ומצחיק.",
-      interests: ["קפה", "טיולים", "סרטים", "יוגה"],
-      image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=800&q=80",
-      authMethod: method,
-      verified: method === "sms" || method === "email",
-      location: { lat: 32.0853, lng: 34.7818, label: "תל אביב" },
-    });
+  const handleLike = () => {
+    if (Math.random() > 0.4) {
+      setMatches((prev) => [...prev, { profile: current, messages: [] }]);
+      setNotifications((prev) => [`${current.name} ואת/ה עשיתם Match! 🎉`, ...prev]);
+      setNotifCount((c) => c + 1);
+      toast.success(`Match חדש עם ${current.name}! 🎉`, { description: "תתחיל/י לשוחח עכשיו" });
+    }
+    setCurrentIdx((i) => (i + 1) % profiles.length);
   };
 
-  const handleSwipe = useCallback(
-    (direction: "left" | "right") => {
-      const [current, ...rest] = profiles;
-      if (!current) return;
-      if (direction === "right") {
-        setMatches((prev) => [...prev, current]);
-        if (Math.random() > 0.4) {
-          setMatchPopup(current);
-          setNotifications((prev) => [{ id: Date.now().toString(), text: `יש התאמה חדשה עם ${current.name}!`, icon: "heart" }, ...prev].slice(0, 10));
-        }
-      }
-      setProfiles(rest);
-    },
-    [profiles]
-  );
-
-  const resetDeck = () => setProfiles(sampleProfiles);
-
-  const startVideoCall = (profile: Profile) => {
-    setVideoCall(profile);
-    setCallState("ringing");
-    setTimeout(() => setCallState("connected"), 2500);
+  const handlePass = () => {
+    setCurrentIdx((i) => (i + 1) % profiles.length);
   };
 
-  const endCall = () => {
-    setCallState("ended");
-    setTimeout(() => setVideoCall(null), 500);
+  const handleSuperLike = () => {
+    setMatches((prev) => [...prev, { profile: current, messages: [] }]);
+    setNotifications((prev) => [`שלח/ת Super Like ל-${current.name} ⭐ ועשיתם Match!`, ...prev]);
+    setNotifCount((c) => c + 1);
+    toast.success(`Super Like ל-${current.name}! ⭐`);
+    setCurrentIdx((i) => (i + 1) % profiles.length);
   };
 
-  if (!user) {
-    return <AuthScreen onAuth={handleAuth} />;
+  const sendMessage = (text: string) => {
+    if (!activeChat) return;
+    setMatches((prev) =>
+      prev.map((m) =>
+        m.profile.id === activeChat
+          ? { ...m, messages: [...m.messages, { from: "me", text }] }
+          : m
+      )
+    );
+    setTimeout(() => {
+      setMatches((prev) =>
+        prev.map((m) =>
+          m.profile.id === activeChat
+            ? { ...m, messages: [...m.messages, { from: "them", text: getReply() }] }
+            : m
+        )
+      );
+    }, 1200);
+  };
+
+  const getReply = () => {
+    const replies = ["נשמע מעניין! 😊", "גם אני אוהב/ת את זה!", "ספר/י לי עוד 🌟", "נדמה לי שנסתדד מצוין 😄", "מתי ניפגש? ☕"];
+    return replies[Math.floor(Math.random() * replies.length)];
+  };
+
+  if (!loggedIn) {
+    return <LoginScreen onLogin={() => setLoggedIn(true)} />;
   }
 
-  const topProfile = profiles[0];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-rose-100">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-md shadow-rose-500/30">
-              <Heart className="w-5 h-5 text-white fill-white" />
-            </div>
-            <span className="text-xl font-bold text-slate-800">לב חם</span>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50" dir="rtl">
+      <Toaster position="top-center" richColors />
+      <Header
+        screen={screen}
+        setScreen={setScreen}
+        matchCount={matches.length}
+        notifCount={notifCount}
+        onNotifClick={() => { setShowNotifs(!showNotifs); setNotifCount(0); }}
+      />
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setView("discover")}
-              className={`p-2 rounded-xl transition-colors ${view === "discover" ? "bg-rose-100 text-rose-600" : "text-slate-400 hover:text-slate-600"}`}
-            >
-              <Sparkles className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setView("matches")}
-              className={`p-2 rounded-xl transition-colors relative ${view === "matches" ? "bg-rose-100 text-rose-600" : "text-slate-400 hover:text-slate-600"}`}
-            >
-              <MessageCircle className="w-5 h-5" />
-              {matches.length > 0 && (
-                <span className="absolute top-1 left-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {matches.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setView("profile")}
-              className={`p-2 rounded-xl transition-colors ${view === "profile" ? "bg-rose-100 text-rose-600" : "text-slate-400 hover:text-slate-600"}`}
-            >
-              <UserIcon className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setShowNotifs(!showNotifs)}
-              className="p-2 rounded-xl transition-colors text-slate-400 hover:text-slate-600 relative"
-            >
-              <Bell className="w-5 h-5" />
-              {notifications.length > 0 && (
-                <span className="absolute top-1 left-1 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  {notifications.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Notifications Panel */}
       <AnimatePresence>
         {showNotifs && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowNotifs(false)}
-              className="fixed inset-0 z-40"
-            />
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="absolute top-16 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-50 bg-white rounded-2xl shadow-xl border border-rose-100 overflow-hidden"
-            >
-              <div className="p-3 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="font-bold text-slate-800">התראות</h3>
-                <button onClick={() => setNotifications([])} className="text-xs text-rose-500 hover:underline">נקה הכל</button>
-              </div>
-              <div className="max-h-80 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <p className="p-6 text-center text-sm text-slate-400">אין התראות חדשות</p>
-                ) : (
-                  notifications.map((n) => (
-                    <div key={n.id} className="flex items-center gap-3 p-3 hover:bg-rose-50/50 transition-colors border-b border-slate-50">
-                      <div className="w-9 h-9 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
-                        {n.icon === "heart" && <Heart className="w-4 h-4 text-rose-500" />}
-                        {n.icon === "message" && <MessageCircle className="w-4 h-4 text-rose-500" />}
-                        {n.icon === "eye" && <Sparkles className="w-4 h-4 text-rose-500" />}
-                      </div>
-                      <p className="text-sm text-slate-700">{n.text}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          </>
+          <NotificationsPanel notifications={notifications} onClose={() => setShowNotifs(false)} />
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
-      <main className="max-w-md mx-auto px-4 py-4 pb-24">
+      <main className="max-w-2xl mx-auto px-4 pb-24 pt-4">
         <AnimatePresence mode="wait">
-          {view === "discover" && (
+          {screen === "discover" && (
             <motion.div key="discover" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              {/* Location Bar */}
-              <div className="flex items-center justify-between mb-4 bg-white rounded-2xl p-3 shadow-sm border border-rose-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center">
-                    <Navigation className="w-4 h-4 text-rose-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-400">המיקום שלך</p>
-                    <p className="text-sm font-semibold text-slate-700">{user.location.label}</p>
-                  </div>
-                </div>
-                <span className="text-xs text-slate-400">{profiles.length} פרופילים בקרבתך</span>
-              </div>
-
-              {/* Card Stack */}
-              <div className="relative w-full h-[500px] mb-6">
-                {profiles.length === 0 ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center mb-4">
-                      <Heart className="w-10 h-10 text-rose-400" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-700 mb-2">זה הכל לעכשיו!</h3>
-                    <p className="text-slate-500 text-sm mb-4">אין עוד פרופילים באזור שלך</p>
-                    <Button onClick={resetDeck} variant="outline" className="rounded-full border-rose-200 text-rose-600 hover:bg-rose-50">
-                      <RotateCcw className="w-4 h-4 ml-2" />
-                      טען מחדש
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    {profiles.slice(0, 3).reverse().map((profile, idx) => {
-                      const realIndex = profiles.length - 1 - idx;
-                      const isTop = realIndex === 0;
-                      return (
-                        <ProfileCard
-                          key={profile.id}
-                          profile={profile}
-                          onSwipe={handleSwipe}
-                          onVideo={startVideoCall}
-                          isTop={isTop}
-                          index={realIndex}
-                        />
-                      );
-                    })}
-                  </>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              {profiles.length > 0 && (
-                <div className="flex items-center justify-center gap-4">
-                  <button
-                    onClick={() => handleSwipe("left")}
-                    className="w-14 h-14 rounded-full bg-white shadow-lg shadow-slate-200/60 border border-slate-100 flex items-center justify-center text-rose-500 hover:scale-110 active:scale-95 transition-transform"
-                  >
-                    <X className="w-7 h-7" />
-                  </button>
-                  <button
-                    onClick={() => handleSwipe("right")}
-                    className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 shadow-lg shadow-rose-500/40 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform"
-                  >
-                    <Heart className="w-8 h-8 fill-white" />
-                  </button>
-                </div>
-              )}
+              <DiscoverScreen
+                profile={current}
+                onLike={handleLike}
+                onPass={handlePass}
+                onSuperLike={handleSuperLike}
+              />
             </motion.div>
           )}
-
-          {view === "matches" && (
+          {screen === "matches" && (
             <motion.div key="matches" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <h2 className="text-2xl font-bold text-slate-800 mb-4">ההתאמות שלי</h2>
-              {matches.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center mb-4">
-                    <MessageCircle className="w-10 h-10 text-rose-400" />
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-700 mb-1">אין עדיין התאמות</h3>
-                  <p className="text-slate-500 text-sm">התחל להחליק כדי למצוא התאמות!</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {matches.map((match) => (
-                    <motion.div
-                      key={match.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="bg-white rounded-2xl overflow-hidden shadow-md border border-rose-100 hover:shadow-lg transition-shadow"
-                    >
-                      <div className="aspect-square overflow-hidden relative">
-                        <img src={match.image} alt={match.name} className="w-full h-full object-cover" />
-                        <button
-                          onClick={() => startVideoCall(match)}
-                          className="absolute top-2 left-2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md hover:scale-110 transition-transform"
-                        >
-                          <Video className="w-4 h-4 text-rose-600" />
-                        </button>
-                      </div>
-                      <div className="p-3">
-                        <div className="flex items-center justify-between">
-                          <h3 className="font-bold text-slate-800 flex items-center gap-1">
-                            {match.name}, {match.age}
-                            {match.verified && <ShieldCheck className="w-3.5 h-3.5 text-sky-500" />}
-                          </h3>
-                          {match.online && <span className="w-2 h-2 bg-green-500 rounded-full" />}
-                        </div>
-                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                          <MapPin className="w-3 h-3" />
-                          {match.distance} ק"מ
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+              <MatchesScreen matches={matches} onOpenChat={(id) => { setActiveChat(id); setScreen("chat"); }} />
             </motion.div>
           )}
-
-          {view === "profile" && (
-            <motion.div key="profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
-              <div className="bg-white rounded-3xl shadow-md border border-rose-100 overflow-hidden">
-                <div className="h-32 bg-gradient-to-br from-rose-400 to-orange-400 relative">
-                  <div className="absolute -bottom-12 right-6">
-                    <Avatar className="w-24 h-24 border-4 border-white rounded-2xl shadow-lg">
-                      <AvatarImage src={user.image} alt={user.name} />
-                      <AvatarFallback className="text-2xl font-bold bg-rose-100 text-rose-600 rounded-2xl">
-                        {user.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                </div>
-                <div className="pt-14 pb-6 px-6">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-2xl font-bold text-slate-800">{user.name}, {user.age}</h2>
-                    {user.verified ? (
-                      <span className="flex items-center gap-1 text-xs font-medium text-sky-600 bg-sky-50 px-2 py-1 rounded-full">
-                        <ShieldCheck className="w-3 h-3" />
-                        מאומת
-                      </span>
-                    ) : (
-                      <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded-full">לא מאומת</span>
-                    )}
-                  </div>
-                  <p className="text-slate-500 text-sm flex items-center gap-1 mt-1">
-                    <MapPin className="w-4 h-4" />
-                    {user.city}
-                  </p>
-                  <p className="text-slate-600 text-sm mt-4 leading-relaxed">{user.bio}</p>
-                  <div className="mt-4">
-                    <p className="text-xs font-semibold text-slate-400 mb-2">תחומי עניין</p>
-                    <div className="flex flex-wrap gap-2">
-                      {user.interests.map((interest) => (
-                        <span key={interest} className="bg-rose-50 text-rose-600 px-3 py-1 rounded-full text-xs font-medium">
-                          {interest}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-slate-100">
-                    <p className="text-xs font-semibold text-slate-400 mb-2">שיטת אימות</p>
-                    <p className="text-sm text-slate-700 capitalize">
-                      {user.authMethod === "google" && "Google"}
-                      {user.authMethod === "facebook" && "Facebook"}
-                      {user.authMethod === "sms" && "SMS"}
-                      {user.authMethod === "email" && "אימייל"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                onClick={() => { setUser(null); setMatches([]); setProfiles(sampleProfiles); setNotifications([]); }}
-                variant="outline"
-                className="w-full rounded-xl h-12 border-rose-200 text-rose-600 hover:bg-rose-50"
-              >
-                <LogOut className="w-4 h-4 ml-2" />
-                התנתק
-              </Button>
+          {screen === "chat" && activeChat && (
+            <motion.div key="chat" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
+              <ChatScreen
+                match={matches.find((m) => m.profile.id === activeChat)!}
+                onSend={sendMessage}
+                onBack={() => { setScreen("matches"); setActiveChat(null); }}
+              />
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
-      {/* Match Popup */}
-      <AnimatePresence>
-        {matchPopup && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setMatchPopup(null)}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.8, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.8, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl"
-            >
-              <div className="flex justify-center mb-6">
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg shadow-rose-500/40">
-                    <Heart className="w-10 h-10 text-white fill-white" />
+      <BottomNav screen={screen} setScreen={setScreen} matchCount={matches.length} />
+    </div>
+  );
+}
+
+function LoginScreen({ onLogin }: { onLogin: () => void }) {
+  const [step, setStep] = useState<"welcome" | "phone" | "verify" | "profile">("welcome");
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-600" dir="rtl">
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-md">
+        <Card className="rounded-3xl shadow-2xl border-0 overflow-hidden">
+          <CardContent className="p-8">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-500 to-pink-600 shadow-lg mb-4">
+                <Heart className="w-8 h-8 text-white fill-white" />
+              </div>
+              <h1 className="text-3xl font-bold text-slate-800">LoveMatch</h1>
+              <p className="text-slate-500 mt-2 text-sm">האתר להיכרויות בחינם לחלוטין</p>
+            </div>
+
+            {step === "welcome" && (
+              <div className="space-y-4">
+                <Button onClick={() => setStep("phone")} className="w-full h-12 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:opacity-90 text-white font-semibold text-base">
+                  התחברות עם SMS / אימייל
+                </Button>
+                <div className="flex items-center gap-3 my-4">
+                  <div className="flex-1 h-px bg-slate-200" />
+                  <span className="text-xs text-slate-400">או התחברות מהירה</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+                <Button variant="outline" onClick={onLogin} className="w-full h-12 rounded-xl border-slate-200 hover:bg-slate-50 font-medium">
+                  <span className="text-blue-600 font-bold ml-2">G</span> המשך עם Google
+                </Button>
+                <Button variant="outline" onClick={onLogin} className="w-full h-12 rounded-xl border-slate-200 hover:bg-slate-50 font-medium">
+                  <span className="text-blue-700 font-bold ml-2">f</span> המשך עם Facebook
+                </Button>
+              </div>
+            )}
+
+            {step === "phone" && (
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-slate-700 font-medium">מספר טלפון או אימייל</Label>
+                  <Input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="050-1234567 או you@email.com"
+                    className="mt-2 h-12 rounded-xl"
+                  />
+                </div>
+                <Button
+                  onClick={() => { toast.success("קוד אימות נשלח!"); setStep("verify"); }}
+                  disabled={!phone}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:opacity-90 text-white font-semibold"
+                >
+                  שלח קוד אימות
+                </Button>
+                <Button variant="ghost" onClick={() => setStep("welcome")} className="w-full text-slate-500">חזרה</Button>
+              </div>
+            )}
+
+            {step === "verify" && (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <p className="text-slate-600 text-sm">הזן/י את הקוד שנשלח אליך</p>
+                  <p className="text-rose-600 font-semibold mt-1">{phone}</p>
+                </div>
+                <Input
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="• • • •"
+                  maxLength={4}
+                  className="text-center text-2xl tracking-8 h-14 rounded-xl font-bold"
+                />
+                <Button
+                  onClick={() => { setStep("profile"); toast.success("אומת בהצלחה!"); }}
+                  disabled={code.length < 4}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:opacity-90 text-white font-semibold"
+                >
+                  אימות
+                </Button>
+              </div>
+            )}
+
+            {step === "profile" && (
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-slate-700 font-medium">איך קוראים לך?</Label>
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="השם שלך" className="mt-2 h-12 rounded-xl" />
+                </div>
+                <Button
+                  onClick={() => { toast.success(`ברוך הבא ${name || "אליך"}!`); onLogin(); }}
+                  disabled={!name}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:opacity-90 text-white font-semibold"
+                >
+                  התחל/י עכשיו!
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <p className="text-center text-white/80 text-xs mt-6">בחינם לחלוטין • ללא תשלום • ללא מנוי</p>
+      </motion.div>
+    </div>
+  );
+}
+
+function Header({ screen, setScreen, matchCount, notifCount, onNotifClick }: {
+  screen: Screen; setScreen: (s: Screen) => void; matchCount: number; notifCount: number; onNotifClick: () => void;
+}) {
+  return (
+    <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-rose-100">
+      <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
+        <button onClick={() => setScreen("discover")} className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-md">
+            <Heart className="w-5 h-5 text-white fill-white" />
+          </div>
+          <span className="text-xl font-bold text-slate-800">LoveMatch</span>
+        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={onNotifClick} className="relative w-10 h-10 rounded-full hover:bg-rose-50 flex items-center justify-center transition-colors">
+            <Bell className="w-5 h-5 text-slate-600" />
+            {notifCount > 0 && (
+              <span className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-500 text-white text-xs flex items-center justify-center font-bold">
+                {notifCount}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function NotificationsPanel({ notifications, onClose }: { notifications: string[]; onClose: () => void }) {
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        className="absolute top-16 left-4 right-4 z-50 max-w-2xl mx-auto"
+      >
+        <Card className="rounded-2xl shadow-xl border-rose-100 overflow-hidden">
+          <CardHeader className="bg-rose-50 pb-3">
+            <CardTitle className="text-base text-slate-800">התראות</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 max-h-80 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <p className="text-center text-slate-400 py-8 text-sm">אין התראות חדשות</p>
+            ) : (
+              notifications.map((n, i) => (
+                <div key={i} className="px-4 py-3 border-b border-slate-50 hover:bg-rose-50/50 transition-colors flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-rose-500" />
                   </div>
-                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="absolute -inset-2">
-                    <Sparkles className="w-5 h-5 text-amber-400 absolute top-0 right-0" />
-                    <Sparkles className="w-4 h-4 text-amber-400 absolute bottom-0 left-0" />
-                  </motion.div>
+                  <p className="text-sm text-slate-700">{n}</p>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </>
+  );
+}
+
+function DiscoverScreen({ profile, onLike, onPass, onSuperLike }: {
+  profile: Profile; onLike: () => void; onPass: () => void; onSuperLike: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between px-2">
+        <h2 className="text-2xl font-bold text-slate-800">גלה/י התאמות</h2>
+        <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100 border-0">
+          <MapPin className="w-3 h-3 ml-1" /> {profile.distance} ק"מ
+        </Badge>
+      </div>
+
+      <motion.div
+        key={profile.id}
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="relative"
+      >
+        <Card className="overflow-hidden rounded-3xl shadow-xl border-0">
+          <div className={`relative h-96 bg-gradient-to-br ${profile.gradient} flex items-center justify-center`}>
+            <span className="text-7xl font-bold text-white/30">{profile.name.charAt(0)}</span>
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+              <div className="flex items-end justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold text-white">{profile.name}, {profile.age}</h3>
+                  <p className="text-white/80 text-sm flex items-center gap-1 mt-1">
+                    <MapPin className="w-3 h-3" /> {profile.city} • {profile.distance} ק"מ ממך
+                  </p>
                 </div>
               </div>
-              <h2 className="text-3xl font-bold text-slate-800 mb-2">יש התאמה! 🎉</h2>
-              <p className="text-slate-500 mb-6">
-                אתה ו<span className="font-bold text-rose-600">{matchPopup.name}</span> אהבתם אחד את השני
-              </p>
-              <div className="flex gap-3">
-                <Button onClick={() => { setMatchPopup(null); setView("matches"); }} className="flex-1 bg-rose-500 hover:bg-rose-600 text-white rounded-xl h-12">
-                  <MessageCircle className="w-4 h-4 ml-2" />
-                  צ'אט
-                </Button>
-                <Button onClick={() => { startVideoCall(matchPopup); setMatchPopup(null); }} variant="outline" className="flex-1 rounded-xl h-12 border-rose-200 text-rose-600 hover:bg-rose-50">
-                  <Video className="w-4 h-4 ml-2" />
-                  וידאו
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+          <CardContent className="p-5 space-y-4">
+            <p className="text-slate-600 text-sm leading-relaxed">{profile.bio}</p>
+            <div className="flex flex-wrap gap-2">
+              {profile.interests.map((interest) => (
+                <Badge key={interest} variant="secondary" className="rounded-full bg-rose-50 text-rose-600 border border-rose-100">
+                  {interest}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
-      {/* Video Call Modal */}
-      <AnimatePresence>
-        {videoCall && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-slate-900 flex flex-col"
-          >
-            {/* Remote Video (simulated) */}
-            <div className="flex-1 relative overflow-hidden">
-              <img src={videoCall.image} alt={videoCall.name} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
+      <div className="flex items-center justify-center gap-4">
+        <button
+          onClick={onPass}
+          className="w-14 h-14 rounded-full bg-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform border border-slate-100"
+        >
+          <X className="w-7 h-7 text-slate-400" />
+        </button>
+        <button
+          onClick={onSuperLike}
+          className="w-12 h-12 rounded-full bg-white shadow-lg flex items-center justify-center hover:scale-110 transition-transform border border-slate-100"
+        >
+          <Star className="w-6 h-6 text-blue-500 fill-blue-500" />
+        </button>
+        <button
+          onClick={onLike}
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+        >
+          <Heart className="w-8 h-8 text-white fill-white" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
-              {/* Call Info */}
-              <div className="absolute top-6 left-0 right-0 text-center text-white">
-                <h3 className="text-xl font-bold">{videoCall.name}</h3>
-                <p className="text-sm opacity-80">
-                  {callState === "ringing" && "מחייג..."}
-                  {callState === "connected" && "מחובר"}
-                  {callState === "ended" && "השיחה הסתיימה"}
-                </p>
-              </div>
+function MatchesScreen({ matches, onOpenChat }: { matches: Match[]; onOpenChat: (id: number) => void }) {
+  if (matches.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-rose-50 mb-4">
+          <Heart className="w-10 h-10 text-rose-300" />
+        </div>
+        <h3 className="text-xl font-bold text-slate-700">עדיין אין התאמות</h3>
+        <p className="text-slate-400 mt-2 text-sm">התחל/י להחליק כדי למצוא התאמות!</p>
+      </div>
+    );
+  }
 
-              {/* Self Video (PiP) */}
-              <div className="absolute top-6 right-6 w-24 h-32 rounded-2xl overflow-hidden border-2 border-white/30 shadow-lg bg-slate-800">
-                {videoOff ? (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <UserIcon className="w-8 h-8 text-slate-500" />
-                  </div>
-                ) : (
-                  <img src={user.image} alt="me" className="w-full h-full object-cover" />
+  return (
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold text-slate-800 px-2">ההתאמות שלי ({matches.length})</h2>
+      <div className="grid grid-cols-2 gap-3">
+        {matches.map((match) => (
+          <motion.div key={match.profile.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+            <Card
+              className="overflow-hidden rounded-2xl shadow-md border-0 cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => onOpenChat(match.profile.id)}
+            >
+              <div className={`relative h-32 bg-gradient-to-br ${match.profile.gradient} flex items-center justify-center`}>
+                <span className="text-4xl font-bold text-white/30">{match.profile.name.charAt(0)}</span>
+                {match.messages.length > 0 && (
+                  <span className="absolute top-2 right-2 w-6 h-6 rounded-full bg-rose-500 text-white text-xs flex items-center justify-center font-bold">
+                    {match.messages.length}
+                  </span>
                 )}
               </div>
-
-              {/* Controls */}
-              <div className="absolute bottom-8 left-0 right-0 flex items-center justify-center gap-4">
-                <button
-                  onClick={() => setMuted(!muted)}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${muted ? "bg-white text-slate-800" : "bg-white/20 text-white backdrop-blur-md"}`}
-                >
-                  {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                </button>
-                <button
-                  onClick={() => setVideoOff(!videoOff)}
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${videoOff ? "bg-white text-slate-800" : "bg-white/20 text-white backdrop-blur-md"}`}
-                >
-                  {videoOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-                </button>
-                <button
-                  onClick={endCall}
-                  className="w-16 h-16 rounded-full bg-rose-500 hover:bg-rose-600 flex items-center justify-center text-white shadow-lg shadow-rose-500/40 transition-colors"
-                >
-                  <PhoneOff className="w-7 h-7" />
-                </button>
-              </div>
-            </div>
+              <CardContent className="p-3">
+                <p className="font-semibold text-slate-800 text-sm">{match.profile.name}, {match.profile.age}</p>
+                <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                  <MapPin className="w-3 h-3" /> {match.profile.city}
+                </p>
+              </CardContent>
+            </Card>
           </motion.div>
-        )}
-      </AnimatePresence>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChatScreen({ match, onSend, onBack }: {
+  match: Match; onSend: (text: string) => void; onBack: () => void;
+}) {
+  const [text, setText] = useState("");
+  const [showVideo, setShowVideo] = useState(false);
+
+  const handleSend = () => {
+    if (!text.trim()) return;
+    onSend(text);
+    setText("");
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3 px-2">
+        <button onClick={onBack} className="text-slate-500 hover:text-slate-700 text-sm font-medium">חזרה</button>
+        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${match.profile.gradient} flex items-center justify-center`}>
+          <span className="text-white font-bold">{match.profile.name.charAt(0)}</span>
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold text-slate-800">{match.profile.name}</p>
+          <p className="text-xs text-emerald-500">מחובר/ת עכשיו</p>
+        </div>
+        <Button size="sm" variant="outline" onClick={() => setShowVideo(!showVideo)} className="rounded-full border-rose-200 text-rose-600 hover:bg-rose-50">
+          <Video className="w-4 h-4 ml-1" /> וידאו
+        </Button>
+      </div>
+
+      {showVideo && (
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+          <Card className="rounded-2xl overflow-hidden border-0 shadow-lg">
+            <div className={`h-48 bg-gradient-to-br ${match.profile.gradient} flex flex-col items-center justify-center relative`}>
+              <div className="absolute top-2 right-2 bg-black/30 rounded-lg px-2 py-1 text-white text-xs flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" /> שיחת וידאו פעילה
+              </div>
+              <span className="text-5xl mb-2">{match.profile.name.charAt(0)}</span>
+              <p className="text-white/80 text-sm">{match.profile.name}</p>
+            </div>
+            <div className="p-3 flex items-center justify-center gap-3 bg-slate-50">
+              <Button size="sm" variant="outline" className="rounded-full">השתק</Button>
+              <Button size="sm" className="rounded-full bg-red-500 hover:bg-red-600 text-white">סיום שיחה</Button>
+              <Button size="sm" variant="outline" className="rounded-full">מצלמה</Button>
+            </div>
+          </Card>
+        </motion.div>
+      )}
+
+      <Card className="rounded-2xl border-0 shadow-md h-96 flex flex-col">
+        <CardContent className="flex-1 overflow-y-auto p-4 space-y-3">
+          {match.messages.length === 0 ? (
+            <div className="text-center py-10">
+              <MessageCircle className="w-10 h-10 text-rose-200 mx-auto mb-2" />
+              <p className="text-slate-400 text-sm">שלח/י הודעה ראשונה!</p>
+            </div>
+          ) : (
+            match.messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.from === "me" ? "justify-start" : "justify-end"}`}>
+                <div className={`max-w-[75%] rounded-2xl px-4 py-2 ${msg.from === "me" ? "bg-rose-500 text-white rounded-bl-sm" : "bg-slate-100 text-slate-700 rounded-br-sm"}`}>
+                  <p className="text-sm">{msg.text}</p>
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+        <div className="border-t border-slate-100 p-3 flex gap-2">
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="כתוב/י הודעה..."
+            className="rounded-full h-11"
+          />
+          <Button onClick={handleSend} className="rounded-full h-11 w-11 p-0 bg-gradient-to-br from-rose-500 to-pink-600 hover:opacity-90">
+            <Heart className="w-5 h-5 fill-white" />
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function BottomNav({ screen, setScreen, matchCount }: { screen: Screen; setScreen: (s: Screen) => void; matchCount: number }) {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-lg border-t border-rose-100">
+      <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-around">
+        <button
+          onClick={() => setScreen("discover")}
+          className={`flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-colors ${screen === "discover" ? "text-rose-600" : "text-slate-400"}`}
+        >
+          <Heart className={`w-6 h-6 ${screen === "discover" ? "fill-rose-600" : ""}`} />
+          <span className="text-xs font-medium">גלה/י</span>
+        </button>
+        <button
+          onClick={() => setScreen("matches")}
+          className={`flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-colors relative ${screen === "matches" || screen === "chat" ? "text-rose-600" : "text-slate-400"}`}
+        >
+          <MessageCircle className={`w-6 h-6 ${screen === "matches" || screen === "chat" ? "fill-rose-600" : ""}`} />
+          <span className="text-xs font-medium">התאמות</span>
+          {matchCount > 0 && (
+            <span className="absolute top-0 right-8 w-5 h-5 rounded-full bg-rose-500 text-white text-xs flex items-center justify-center font-bold">
+              {matchCount}
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
