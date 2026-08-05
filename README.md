@@ -1,135 +1,28 @@
-````markdown
-# ❤️ REN – Site de Rencontres Gratuit
+# לב חם (Lev Cham) - אפליקציית היכרויות חינמית
 
-Bienvenue sur **REN**, une plateforme de rencontres moderne, simple et entièrement gratuite.
+אפליקציית היכרויות חינמית לחלוטין שנבנתה ב-React, TypeScript ו-Tailwind CSS. 
+האפליקציה כוללת ממשק משתמש מודרני בעברית (RTL), אנימציות חלקות, ומגוון פיצ'רים מתקדמים לחיבור בין אנשים.
 
-🌐 **Site en ligne :** https://taquin1.github.io/REN/
+## ✨ תכונות עיקריות
 
----
+- 🔐 **אימות משתמשים מקיף**: 
+  - התחברות עם Google ו-Facebook
+  - אימות באמצעות SMS או אימייל (עם קוד חד-פעמי)
+  - תג "מאומת" לפרופילים שעברו אימות
+- 🎴 **ממשק החלקת כרטיסים (Swipe)**: גלילה בין פרופילים עם אנימציות חלקות (Framer Motion)
+- 📍 **מיקום גיאוגרפי**: הצגת מרחק בק"מ בין המשתמשים וסינון פרופילים לפי קרבה
+- 📹 **שיחות וידאו**: ממשק שיחת וידאו מובנה עם בקרות שמע/וידאו (כפתור השתקה, כיבוי מצלמה)
+- 🔔 **התראות בזמן אמת**: פאנל התראות נשלף עם עדכונים על התאמות, הודעות וצפיות בפרופיל
+- ❤️ **מערכת התאמות (Matches)**: פאנל נפרד לצפייה בפרופילים שאהבת ואהבו אותך בחזרה
+- 👤 **פרופיל אישי**: יצירת פרופיל עם תמונה, ביו, תחומי עניין ופרטי אימות
 
-## 📖 À propos
+## 🛠️ טכנולוגיות
 
-REN est un projet de site de rencontres développé avec les technologies web standards.
+- **React 19** - ספריית UI
+- **TypeScript** - טיפוסים סטטיים
+- **Tailwind CSS** - עיצוב מבוסס Utility
+- **Framer Motion** - אנימציות ומחוות
+- **Lucide React** - אייקונים
+- **shadcn/ui** - קומפוננטי UI מותאמים
 
-L'objectif est de proposer une interface rapide, responsive et agréable permettant aux utilisateurs de découvrir des profils et d'échanger dans un environnement simple.
-
----
-
-## ✨ Fonctionnalités
-
-- ✅ Interface moderne
-- ✅ Responsive (ordinateur, tablette et mobile)
-- ✅ Profils utilisateurs
-- ✅ Recherche de profils
-- ✅ Système de favoris / likes
-- ✅ Navigation rapide
-- ✅ Design optimisé
-
----
-
-## 🛠️ Technologies utilisées
-
-- HTML5
-- CSS3
-- JavaScript (ES6)
-
----
-
-## 🚀 Installation
-
-Clonez le dépôt :
-
-```bash
-git clone https://github.com/Taquin1/REN.git
-````
-
-Puis ouvrez simplement :
-
-```text
-index.html
-```
-
-dans votre navigateur.
-
----
-
-## 📂 Structure du projet
-
-```
-REN/
-│
-├── index.html
-├── css/
-├── js/
-├── images/
-├── assets/
-└── README.md
-```
-
----
-
-## 🌍 Déploiement
-
-Le projet est hébergé gratuitement avec **GitHub Pages**.
-
-https://taquin1.github.io/REN/
-
----
-
-## 📱 Compatibilité
-
-* Google Chrome
-* Mozilla Firefox
-* Microsoft Edge
-* Safari
-* Android
-* iOS
-
----
-
-## 🔒 Confidentialité
-
-Ce projet ne collecte aucune donnée personnelle sans le consentement de l'utilisateur.
-
----
-
-## 📌 Feuille de route
-
-* [ ] Création de compte
-* [ ] Connexion
-* [ ] Upload de photos
-* [ ] Messagerie privée
-* [ ] Notifications
-* [ ] Géolocalisation
-* [ ] Mode sombre
-* [ ] Progressive Web App (PWA)
-
----
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues.
-
-1. Fork du projet
-2. Créez une branche
-3. Effectuez vos modifications
-4. Ouvrez une Pull Request
-
----
-
-## 📄 Licence
-
-Projet distribué sous licence **MIT**.
-
----
-
-## 👨‍💻 Auteur
-
-Développé par **Taquin1**.
-
----
-
-⭐ N'hésitez pas à laisser une étoile au projet si vous l'appréciez !
-
-```
-```
+## 📁 מבנה הפרויקט
