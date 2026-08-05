@@ -1,20 +1,13 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./index.css";
 
-export default defineConfig({
-  base: "/REN/",
+const container = document.getElementById("root");
+if (!container) throw new Error("Root container not found");
 
-  plugins: [react()],
-
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-
-  server: {
-    port: 3000,
-    open: true,
-  },
-});
+createRoot(container).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
